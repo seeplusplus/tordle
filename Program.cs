@@ -9,10 +9,23 @@ namespace tordle
 {
     class Program
     {
+        private static void PrintUsage() {
+            Console.WriteLine("USAGE: ClientOutputDirectory TorrentDirectory AuditMode");
+        }
         static void Main(string[] args)
         {
-            string filePath = "/data/transmission-downloads/";
-            string torrentDirectory = "/var/lib/transmission-daemon/info/torrents";
+            if (args.Length != 3) {
+                PrintUsage();
+                return; 
+            }
+
+            string filePath = args[0];
+            string torrentDirectory = args[1];
+            bool auditMode = true;
+            if (!Boolean.TryParse(args[2], out auditMode)) {
+                PrintUsage();
+                return;
+            }
 
             var fileSystemEntryList = Directory.EnumerateFileSystemEntries(filePath);
             var torrentList = Directory.EnumerateFiles(torrentDirectory);
@@ -27,11 +40,11 @@ namespace tordle
                                     .Where(t => t.Info.Name == fileName).Any());
             });
             foreach (var fsEntry in fsEntryQuery) {
-                Console.WriteLine($"Deleting {fsEntry}...");
+                Console.WriteLine($"{((auditMode) ? "AUDIT MODE: " : "")} Deleting {fsEntry}...");
                 try { 
-                    if (File.Exists(fsEntry))
+                    if (File.Exists(fsEntry) && !auditMode)
                         File.Delete(fsEntry);
-                    if (Directory.Exists(fsEntry))
+                    if (Directory.Exists(fsEntry) && !auditMode)
                         Directory.Delete(fsEntry, true);
                 } 
                 catch {
